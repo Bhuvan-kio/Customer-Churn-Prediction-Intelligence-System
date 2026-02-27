@@ -9,9 +9,9 @@ const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     return (
       <div style={{
-        background: '#1A1F2E', border: '1px solid #2A3040',
+        background: 'var(--bg-sidebar)', border: '1px solid var(--border-glass)',
         borderRadius: 8, padding: '0.5rem 0.8rem',
-        fontSize: '0.78rem', color: '#F0F6FF',
+        fontSize: '0.78rem', color: 'var(--text-primary)',
       }}>
         {payload.map(p => (
           <div key={p.name} style={{ color: p.color }}>
@@ -24,32 +24,34 @@ const CustomTooltip = ({ active, payload }) => {
   return null;
 };
 
-export default function ModelPerformance() {
-  const [data, setData]       = useState(null);
-  const [comp, setComp]       = useState(null);
+export default function ModelPerformance({ domain }) {
+  const [data, setData] = useState(null);
+  const [comp, setComp] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    Promise.all([api.getModelPerformance(), api.getModelComparison()])
+    setLoading(true);
+    setData(null); setComp(null);
+    Promise.all([api.getModelPerformance(domain), api.getModelComparison(domain)])
       .then(([perf, comparison]) => { setData(perf); setComp(comparison); })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [domain]);
 
   if (loading) return <div className="loading"><div className="spinner" /> Loading…</div>;
-  if (error)   return <div className="error-box">⚠️ {error}</div>;
+  if (error) return <div className="error-box">⚠️ {error}</div>;
 
   // Build chart data
   const rocData = zipXY(data.lr_roc.fpr, data.lr_roc.tpr).map((pt, i) => ({
     fpr: pt.x,
-    lr:  pt.y,
+    lr: pt.y,
     xgb: zipXY(data.xgb_roc.fpr, data.xgb_roc.tpr)[i]?.y ?? 0,
-    rf:  zipXY(data.rf_roc.fpr, data.rf_roc.tpr)[i]?.y ?? 0,
+    rf: zipXY(data.rf_roc.fpr, data.rf_roc.tpr)[i]?.y ?? 0,
   }));
 
   const gainData = zipXY(data.gain_population_pct, data.gain_capture_rate).map((pt, i) => ({
-    pop:    +(pt.x * 100).toFixed(1),
+    pop: +(pt.x * 100).toFixed(1),
     capture: +(pt.y * 100).toFixed(1),
     random: +(pt.x * 100).toFixed(1),
   }));
@@ -79,9 +81,9 @@ export default function ModelPerformance() {
                 label={{ value: 'True Positive Rate', angle: -90, position: 'insideLeft', fill: '#8892A0', fontSize: 11 }} />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ color: '#8892A0', fontSize: '0.78rem', paddingTop: '0.5rem' }} />
-              <Line dataKey="lr"  name={`Linear (AUC=${data.lr_auc})`}  stroke="#8892A0" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
+              <Line dataKey="lr" name={`Linear (AUC=${data.lr_auc})`} stroke="#8892A0" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
               <Line dataKey="xgb" name={`XGBoost (AUC=${data.xgb_auc})`} stroke="#FFA94D" strokeWidth={2} strokeDasharray="4 2" dot={false} />
-              <Line dataKey="rf"  name={`Random Forest (AUC=${data.rf_auc})`} stroke="#4A90D9" strokeWidth={2.5} dot={false} />
+              <Line dataKey="rf" name={`Random Forest (AUC=${data.rf_auc})`} stroke="#4A90D9" strokeWidth={2.5} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -98,8 +100,8 @@ export default function ModelPerformance() {
                 label={{ value: '% Churn Captured', angle: -90, position: 'insideLeft', fill: '#8892A0', fontSize: 11 }} />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ color: '#8892A0', fontSize: '0.78rem', paddingTop: '0.5rem' }} />
-              <Line dataKey="capture" name={`${data.best_model} Gain`}  stroke="#4A90D9" strokeWidth={2.5} dot={false} />
-              <Line dataKey="random"  name="Random Baseline"            stroke="#2A3040" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
+              <Line dataKey="capture" name={`${data.best_model} Gain`} stroke="#4A90D9" strokeWidth={2.5} dot={false} />
+              <Line dataKey="random" name="Random Baseline" stroke="#2A3040" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -115,41 +117,50 @@ export default function ModelPerformance() {
       </div>
 
       {/* Model Comparison */}
-      <h2 className="page-title" style={{ marginTop: '1.5rem', marginBottom: '0.8rem' }}>
-        🏆 Model Comparison
+      {/* Model Comparison */}
+      <h2 className="section-title" style={{ fontSize: '1.5rem', marginTop: '3rem', marginBottom: '1.5rem' }}>
+        Model Intelligence Benchmark
       </h2>
 
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Model</th>
-              <th>ROC-AUC</th>
-              <th style={{ minWidth: 200 }}>Top 10% Capture</th>
-            </tr>
-          </thead>
-          <tbody>
-            {comp.models.map((m, i) => (
-              <tr key={i} style={i === bestIdx ? { background: 'rgba(74,144,217,0.06)' } : {}}>
-                <td style={{ fontWeight: 600 }}>{m.model}</td>
-                <td style={{ color: 'var(--blue)', fontWeight: 700 }}>{m.roc_auc.toFixed(4)}</td>
-                <td>
-                  <div className="progress-bar-wrap">
-                    <div className="progress-bar">
-                      <div className="progress-bar-fill" style={{ width: `${m.top10_capture}%` }} />
-                    </div>
-                    <span className="progress-label">{m.top10_capture}%</span>
-                  </div>
-                </td>
+      <div className="glass-card" style={{ padding: '1.5rem' }}>
+        <div className="data-table-wrapper">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Analytical Model</th>
+                <th>ROC-AUC Score</th>
+                <th style={{ minWidth: 250 }}>Top 10% Risk Capture</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {comp.models.map((m, i) => (
+                <tr key={i} style={i === bestIdx ? { filter: 'drop-shadow(0 0 8px var(--emerald-glow))' } : {}}>
+                  <td style={{ fontWeight: 700, color: i === bestIdx ? 'var(--emerald)' : 'var(--text-primary)' }}>
+                    {m.model} {i === bestIdx && '🏆'}
+                  </td>
+                  <td style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{m.roc_auc.toFixed(4)}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div className="bar-container" style={{ flex: 1 }}>
+                        <div
+                          className={`bar-fill ${i === bestIdx ? '' : 'gold'}`}
+                          style={{ width: `${m.top10_capture}%`, opacity: i === bestIdx ? 1 : 0.6 }}
+                        />
+                      </div>
+                      <span style={{ fontWeight: 800, minWidth: '50px', fontSize: '0.85rem' }}>{m.top10_capture}%</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div className="insight-box" style={{ marginTop: '1rem' }}>
-        🏆 <strong>{comp.models[bestIdx]?.model}</strong> is the primary model for deployment — it achieves
-        the highest Top 10% capture rate ({comp.models[bestIdx]?.top10_capture}%).
+      <div className="glass-card" style={{ marginTop: '2rem', background: 'var(--emerald-glow)', border: '1px solid var(--emerald)', padding: '1.25rem' }}>
+        <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>
+          🚀 <strong>Deployment Recommendation:</strong> The engine identifies <strong>{comp.models[bestIdx]?.model}</strong> as the optimal production vector, achieving a peak capture rate of {comp.models[bestIdx]?.top10_capture}% within the high-risk decile.
+        </p>
       </div>
     </>
   );

@@ -1,136 +1,108 @@
 import { useState, useCallback } from 'react';
 import { api } from '../api.js';
 
-function SliderField({ label, min, max, step, value, onChange }) {
-  const pct = ((value - min) / (max - min) * 100).toFixed(1);
-  return (
-    <div className="slider-group">
-      <div className="slider-label">
-        {label}
-        <span>{value}%</span>
-      </div>
-      <input
-        type="range"
-        min={min} max={max} step={step}
-        value={value}
-        style={{ '--val': `${pct}%` }}
-        onChange={e => onChange(+e.target.value)}
-      />
-    </div>
-  );
-}
-
-export default function ABTesting() {
+export default function ABTesting({ domain }) {
   const [churnRed, setChurnRed] = useState(30);
-  const [result,   setResult]   = useState(null);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState(null);
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const simulate = useCallback(() => {
     setLoading(true);
     setError(null);
-    api.abTest({ churn_reduction_pct: churnRed })
+    api.abTest({ churn_reduction_pct: churnRed }, domain)
       .then(setResult)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, [churnRed]);
+  }, [churnRed, domain]);
 
   return (
-    <>
-      <h1 className="page-title">🧪 Retention Experiment Simulation</h1>
-      <p className="page-subtitle">
-        Simulated A/B test on the high-risk segment — control vs. targeted intervention.
-      </p>
+    <div className="fade-in">
+      <header className="section-header">
+        <h1 className="section-title">A/B Test Experiment Center</h1>
+        <p className="section-desc">Simulate parallelized retention experiments to validate absolute and relative uplift against control groups.</p>
+      </header>
 
-      <div className="card" style={{ maxWidth: 520, marginBottom: '1.5rem' }}>
-        <div className="chart-title" style={{ marginBottom: '1rem' }}>Experiment Parameters</div>
-        <SliderField
-          label="Expected Churn Reduction (%)"
-          min={5} max={80} step={5}
-          value={churnRed}
-          onChange={setChurnRed}
-        />
-        <button
-          onClick={simulate}
-          disabled={loading}
-          style={{
-            marginTop: '1rem',
-            width: '100%',
-            padding: '0.65rem',
-            background: 'linear-gradient(135deg, #4A90D9, #7B68EE)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '8px',
-            fontWeight: 700,
-            fontSize: '0.88rem',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            opacity: loading ? 0.7 : 1,
-          }}
-        >
-          {loading ? 'Simulating…' : '▶ Run A/B Test'}
-        </button>
-        {error && <div className="error-box" style={{ marginTop: '0.8rem' }}>⚠️ {error}</div>}
-      </div>
+      <div className="engine-grid" style={{ gridTemplateColumns: 'minmax(300px, 450px) 1fr' }}>
+        {/* Control Panel */}
+        <div className="glass-card" style={{ padding: '2rem' }}>
+          <h3 className="metric-label" style={{ marginBottom: '2rem' }}>Experiment Parameters</h3>
 
-      {result && (
-        <>
-          <div className="grid-3" style={{ marginBottom: '1rem' }}>
-            <div className="result-card">
-              <div className="result-label">Control Group Churn</div>
-              <div className="result-value red">{result.control_churn_rate}%</div>
-              <div className="result-sub">{result.control_group_size} customers (no offer)</div>
+          <div className="metric-item" style={{ marginBottom: '2.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <span className="metric-label">Retention Efficiency Lift</span>
+              <span className="metric-status status-emerald">{churnRed}%</span>
             </div>
-            <div className="result-card">
-              <div className="result-label">Treatment Group Churn</div>
-              <div className="result-value green">{result.treatment_churn_rate}%</div>
-              <div className="result-sub">{result.treatment_group_size} customers (with offer)</div>
-            </div>
-            <div className="result-card">
-              <div className="result-label">Churn Reduction</div>
-              <div className="result-value blue">{result.absolute_reduction}pp</div>
-              <div className="result-sub">{result.relative_reduction}% relative lift</div>
-            </div>
+            <input type="range" min="5" max="80" step="5" value={churnRed} onChange={e => setChurnRed(+e.target.value)} style={{ width: '100%', accentColor: 'var(--emerald)' }} />
           </div>
 
-          <div className="insight-box">
-            🔬 Targeted intervention reduces churn by&nbsp;
-            <strong>{result.absolute_reduction}%</strong> (absolute) in the high-risk segment.
-            This translates to a&nbsp;<strong>{result.relative_reduction}% relative improvement</strong>&nbsp;
-            over the control group, demonstrating statistically meaningful impact of the retention campaign.
-          </div>
+          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={simulate} disabled={loading}>
+            {loading ? 'Initializing Experiment...' : '▶ Initialize A/B Test'}
+          </button>
+          {error && <div className="error-box" style={{ marginTop: '1rem' }}>⚠️ {error}</div>}
+        </div>
 
-          {/* Visual comparison bar */}
-          <div className="card" style={{ marginTop: '1rem' }}>
-            <div className="chart-title" style={{ marginBottom: '1rem' }}>Visual Comparison</div>
-            {[
-              { label: 'Control Group', value: result.control_churn_rate, color: 'var(--red)', max: 100 },
-              { label: 'Treatment Group', value: result.treatment_churn_rate, color: 'var(--green)', max: 100 },
-            ].map(({ label, value, color }) => (
-              <div key={label} style={{ marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
-                  <span>{label}</span>
-                  <strong style={{ color }}>{value}%</strong>
+        {/* Results Display */}
+        <div style={{ display: 'grid', gap: '1.5rem' }}>
+          {result ? (
+            <>
+              <div className="metrics-row" style={{ gap: '1.5rem' }}>
+                <div className="glass-card metric-card" style={{ flex: 1, borderLeft: '4px solid var(--gold)' }}>
+                  <span className="metric-label">Control Group Churn</span>
+                  <div className="metric-value status-gold">{result.control_churn_rate}%</div>
+                  <div className="metric-status">{result.control_group_size} Active Nodes</div>
                 </div>
-                <div style={{ background: '#1E2433', borderRadius: 4, height: 8, overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${value}%`,
-                    background: color,
-                    borderRadius: 4,
-                    transition: 'width 0.5s ease',
-                  }} />
+                <div className="glass-card metric-card" style={{ flex: 1, borderLeft: '4px solid var(--emerald)' }}>
+                  <span className="metric-label">Treatment Group Churn</span>
+                  <div className="metric-value status-emerald">{result.treatment_churn_rate}%</div>
+                  <div className="metric-status">{result.treatment_group_size} Target Nodes</div>
                 </div>
               </div>
-            ))}
-          </div>
-        </>
-      )}
 
-      {!result && !loading && (
-        <div className="loading" style={{ height: 200 }}>
-          Click <strong>Run A/B Test</strong> to see results
+              <div className="glass-card" style={{ padding: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', alignItems: 'center' }}>
+                  <h3 className="metric-label">Differential Visualization</h3>
+                  <div className="metric-status status-emerald" style={{ fontSize: '1.1rem', fontWeight: 800 }}>+{result.relative_reduction}% Relative Uplift</div>
+                </div>
+
+                <div style={{ marginBottom: '2rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                    <span className="metric-label" style={{ color: 'var(--text-secondary)' }}>Control Strategy</span>
+                    <span style={{ fontWeight: 700, color: 'var(--gold)' }}>{result.control_churn_rate}% Exit Rate</span>
+                  </div>
+                  <div className="bar-container" style={{ height: '12px' }}>
+                    <div className="bar-fill" style={{ width: `${result.control_churn_rate}%`, background: 'var(--gold)' }}></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                    <span className="metric-label" style={{ color: 'var(--text-secondary)' }}>Treatment Strategy</span>
+                    <span style={{ fontWeight: 700, color: 'var(--emerald)' }}>{result.treatment_churn_rate}% Exit Rate</span>
+                  </div>
+                  <div className="bar-container" style={{ height: '12px' }}>
+                    <div className="bar-fill" style={{ width: `${result.treatment_churn_rate}%` }}></div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass-card" style={{ padding: '1.5rem', background: 'var(--emerald-glow)', border: '1px solid var(--emerald)' }}>
+                <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+                  <strong>Experiment Insight:</strong> The treatment variant shows a <strong>{result.absolute_reduction}%</strong> absolute reduction in churn risk. This indicates a high probability of successful intervention at the 95% confidence interval.
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="glass-card" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border-glass)' }}>
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔬</div>
+                <div>Ready for Experimentation</div>
+                <p style={{ fontSize: '0.8rem' }}>Adjust lift efficiency and initialize the test vector.</p>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 }

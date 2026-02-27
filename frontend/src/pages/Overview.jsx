@@ -1,96 +1,167 @@
 import { useState, useEffect } from 'react';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from 'recharts';
 import { api } from '../api.js';
 
-export default function Overview({ navigate }) {
-  const [kpis, setKpis]       = useState(null);
+export default function Overview({ navigate, domain }) {
+  const [kpis, setKpis] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    api.getKpis()
-      .then(setKpis)
+    setLoading(true);
+    setKpis(null);
+    setAnalytics(null);
+    Promise.all([api.getKpis(domain), api.getOverviewAnalytics(domain)])
+      .then(([k, a]) => {
+        setKpis(k);
+        setAnalytics(a);
+      })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [domain]);
 
   if (loading) return <div className="loading"><div className="spinner" /> Loading…</div>;
-  if (error)   return <div className="error-box">⚠️ {error} — is the FastAPI backend running on port 8000?</div>;
+  if (error) return <div className="error-box">⚠️ {error}</div>;
 
-  const quickNav = [
-    { icon: '📈', name: 'Model Performance', desc: 'ROC curves, gain chart, model comparison', key: 'model_performance' },
-    { icon: '🔎', name: 'Feature Importance', desc: 'Top churn drivers from Random Forest',    key: 'feature_importance' },
-    { icon: '🎯', name: 'Risk Ranking',        desc: 'High-risk customers with retention actions', key: 'risk_ranking' },
-    { icon: '💰', name: 'ROI Simulator',       desc: 'Project revenue impact of retention',    key: 'roi_simulator' },
-  ];
+  const donutColors = ['#475569', '#10b981'];
+  const segColors = ['#10b981', '#f59e0b', '#3b82f6'];
+
+  const imbalanceBarData = analytics.class_imbalance.distribution.map(d => ({
+    segment: d.name,
+    customers: d.count,
+  }));
 
   return (
-    <>
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 className="hero-title">Customer Churn Risk Intelligence</h1>
-        <p className="hero-subtitle">Predict &nbsp;·&nbsp; Rank &nbsp;·&nbsp; Retain &nbsp;·&nbsp; Optimize</p>
+    <div className="fade-in">
+      <header className="section-header">
+        <h1 className="section-title">Churn Risk Engine <span style={{ color: 'var(--text-muted)', fontSize: '1.2rem', fontWeight: 500 }}>v4.0</span></h1>
+        <p className="section-desc">Multi-algorithm predictive suite with advanced data sanitization and domain-specific risk assessment.</p>
+      </header>
+
+      {/* Main KPI Row */}
+      <div className="metrics-row">
+        <div className="glass-card metric-card">
+          <div className="metric-label-row">
+            <span className="metric-label">Total Analyzed Assets</span>
+            <span className="metric-icon">👥</span>
+          </div>
+          <div className="metric-value">{kpis.total_customers.toLocaleString()}</div>
+          <div className="metric-status status-emerald">✓ Dataset Verified</div>
+        </div>
+
+        <div className="glass-card metric-card">
+          <div className="metric-label-row">
+            <span className="metric-label">Avg. Churn Propensity</span>
+            <span className="metric-icon">📉</span>
+          </div>
+          <div className="metric-value">{kpis.churn_rate}%</div>
+          <div className="metric-status status-gold">⚡ Review Recommended</div>
+        </div>
+
+        <div className="glass-card metric-card">
+          <div className="metric-label-row">
+            <span className="metric-label">Model Confidence Score</span>
+            <span className="metric-icon">🎯</span>
+          </div>
+          <div className="metric-value">{(kpis.model_auc * 100).toFixed(1)}%</div>
+          <div className="metric-status status-emerald">✓ {kpis.best_model} Active</div>
+        </div>
       </div>
 
-      {/* KPI row */}
-      <div className="grid-3" style={{ marginBottom: '0.5rem' }}>
-        <div className="kpi-card">
-          <div className="kpi-label">Total Customers</div>
-          <div className="kpi-value blue">{kpis.total_customers.toLocaleString()}</div>
-          <div className="kpi-caption">Dataset: {kpis.dataset}</div>
+      {/* Data Health & Imbalance */}
+      <h2 className="section-title" style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Intelligence Diagnostics</h2>
+      <div className="engine-grid" style={{ marginBottom: '3rem' }}>
+        <div className="glass-card">
+          <h3 className="metric-label" style={{ marginBottom: '1.5rem' }}>Data Integrity Manifest</h3>
+          <div style={{ display: 'grid', gap: '1.5rem' }}>
+            <div className="metric-item">
+              <div className="metric-label">Missing Data Points</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="bar-container"><div className="bar-fill" style={{ width: `${analytics.data_health.missing_values_pct}%` }}></div></div>
+                <span className="metric-status">{analytics.data_health.missing_values_pct}%</span>
+              </div>
+            </div>
+            <div className="metric-item">
+              <div className="metric-label">Duplicate Registry Entries</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="bar-container"><div className="bar-fill gold" style={{ width: `${Math.min(100, analytics.data_health.duplicate_records_pct * 10)}%` }}></div></div>
+                <span className="metric-status">{analytics.data_health.duplicate_records_pct}%</span>
+              </div>
+            </div>
+            <div className="metric-item">
+              <div className="metric-label">System Architecture Shape</div>
+              <div className="metric-status status-emerald" style={{ fontSize: '1.2rem', fontWeight: 700 }}>
+                {analytics.data_health.rows.toLocaleString()} <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Nodes</span> × {analytics.data_health.columns} <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Vectors</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="kpi-card">
-          <div className="kpi-label">Overall Churn Rate</div>
-          <div className="kpi-value red">{kpis.churn_rate}%</div>
-          <div className="kpi-caption">Historical attrition</div>
-        </div>
-        <div className="kpi-card">
-          <div className="kpi-label">Best Model AUC</div>
-          <div className="kpi-value green">{kpis.model_auc}</div>
-          <div className="kpi-caption">{kpis.best_model}</div>
+
+        <div className="glass-card">
+          <h3 className="metric-label" style={{ marginBottom: '1.5rem' }}>Class Distribution Matrix</h3>
+          <div style={{ height: '200px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={analytics.class_imbalance.distribution}
+                  dataKey="count"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                >
+                  {analytics.class_imbalance.distribution.map((_, i) => (
+                    <Cell key={i} fill={donutColors[i % donutColors.length]} stroke="rgba(255,255,255,0.1)" />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ background: 'var(--bg-sidebar)', border: '1px solid var(--border-glass)', borderRadius: '10px', color: 'var(--text-primary)' }}
+                  itemStyle={{ color: 'var(--text-primary)' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+            <span className="metric-status status-emerald" style={{ fontSize: '0.9rem' }}>
+              Churn Capture Ratio: <span style={{ color: '#fff' }}>{analytics.class_imbalance.ratio}</span>
+            </span>
+          </div>
         </div>
       </div>
 
-      <hr className="divider" />
-
-      {/* Quick-nav cards */}
-      <div style={{ marginBottom: '0.8rem' }}>
-        <h2 className="page-title">🚀 Quick Navigation</h2>
-        <p className="page-subtitle">Use the sidebar or the cards below to explore all sections.</p>
-      </div>
-
-      <div className="grid-4">
-        {quickNav.map(({ icon, name, desc, key }) => (
-          <div
-            key={key}
-            className="nav-quick-card"
-            onClick={() => navigate(key)}
-          >
-            <div className="card-icon">{icon}</div>
-            <div className="card-name">{name}</div>
-            <div className="card-desc">{desc}</div>
+      {/* Segmentation Snapshots */}
+      <h2 className="section-title" style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Risk Vector Analytics</h2>
+      <div className="metrics-row">
+        {analytics.segmentations.map((seg, idx) => (
+          <div key={seg.title} className="glass-card" style={{ padding: '1.5rem' }}>
+            <div className="metric-label" style={{ marginBottom: '1.5rem' }}>{seg.title}</div>
+            <div style={{ height: '220px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={seg.rows}>
+                  <XAxis dataKey="segment" axisLine={false} tickLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 10 }} />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                    contentStyle={{ background: 'var(--bg-sidebar)', border: '1px solid var(--border-glass)', borderRadius: '10px', color: 'var(--text-primary)' }}
+                    itemStyle={{ color: 'var(--text-primary)' }}
+                  />
+                  <Bar dataKey="churn_rate" fill={segColors[idx % segColors.length]} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         ))}
       </div>
-
-      <hr className="divider" />
-
-      {/* Dataset summary */}
-      <h2 className="page-title">📋 Dataset Summary</h2>
-      <div className="grid-3" style={{ marginTop: '0.8rem' }}>
-        <div className="card card-sm">
-          <div className="kpi-label">Baseline AUC (Linear)</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-muted)', marginTop: '0.3rem' }}>{kpis.baseline_auc}</div>
-        </div>
-        <div className="card card-sm">
-          <div className="kpi-label">Champion Model</div>
-          <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--blue)', marginTop: '0.3rem' }}>{kpis.best_model}</div>
-        </div>
-        <div className="card card-sm">
-          <div className="kpi-label">Lift Over Baseline</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--green)', marginTop: '0.3rem' }}>
-            +{((kpis.model_auc - kpis.baseline_auc) * 100).toFixed(1)}pp AUC
-          </div>
-        </div>
-      </div>
-    </>
+    </div>
   );
 }

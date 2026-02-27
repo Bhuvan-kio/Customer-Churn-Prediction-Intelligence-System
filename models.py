@@ -6,7 +6,7 @@ Top 10% customer targeting captures at least 40% of actual churners.
 
 Usage:
     python models.py
-    python models.py --data data.csv
+    python models.py --data data/data.csv
     python models.py --target churn
 """
 
@@ -26,7 +26,7 @@ from xgboost import XGBClassifier
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Top-10% churn capture evaluator")
-    parser.add_argument("--data", default="data.csv", help="Path to labeled CSV dataset")
+    parser.add_argument("--data", default="data/data.csv", help="Path to labeled CSV dataset")
     parser.add_argument("--target", default=None, help="Target column name (auto-detect if omitted)")
     parser.add_argument("--test-size", type=float, default=0.2, help="Test split ratio")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
