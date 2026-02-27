@@ -1,4 +1,4 @@
-# 🧠 Customer Churn Prediction Intelligence System (C.C.P.I.S.)
+# Customer Churn Prediction Intelligence System (C.C.P.I.S.)
 
 <div align="center">
 
@@ -14,7 +14,7 @@
 
 ---
 
-## 📸 Preview
+## Preview
 
 ### Intelligence Home
 ![Intelligence Home](preview/06_landing_page.png)
@@ -36,24 +36,24 @@
 
 ---
 
-## ✨ Features
+## Features
 
 | Module | Description |
 |---|---|
-| 🔥 **Churn Risk Engine** | Real-time XGBoost churn probability scoring, class distribution, data integrity manifest |
-| 🏆 **High-Risk Ranking** | Filterable customer segment table with geography and revenue filters |
-| 🧬 **Multi-Platform Analysis** | Feature importance across Telecom, Banking, and E-Commerce domains |
-| ⚡ **Model Performance** | ROC-AUC curves, cumulative gain charts, model benchmark table |
-| 📋 **Retention Playbook** | Strategy cards with projected ROI per customer category |
-| 💰 **ROI Simulator** | Adjustable intervention sliders with revenue recovery projections |
-| 🔬 **A/B Testing** | Statistical significance testing for retention interventions |
-| 🎁 **Reward System** | Campaign builder for loyal user rewards and at-risk re-engagement |
-| 🌗 **3 Themes** | Dark · Light · AMOLED pitch-black (OLED optimized) |
-| 📤 **File Upload** | Real CSV/JSON/XLSX drag-and-drop ingest with validation |
+| **Churn Risk Engine** | Real-time XGBoost churn probability scoring, class distribution, data integrity manifest |
+| **High-Risk Ranking** | Filterable customer segment table with geography and revenue filters |
+| **Multi-Platform Analysis** | Feature importance across Telecom, Banking, and E-Commerce domains |
+| **Model Performance** | ROC-AUC curves, cumulative gain charts, model benchmark table |
+| **Retention Playbook** | Strategy cards with projected ROI per customer category |
+| **ROI Simulator** | Adjustable intervention sliders with revenue recovery projections |
+| **A/B Testing** | Statistical significance testing for retention interventions |
+| **Reward System** | Campaign builder for loyal user rewards and at-risk re-engagement |
+| **3 Themes** | Dark · Light · AMOLED pitch-black (OLED optimized) |
+| **File Upload** | Real CSV/JSON/XLSX drag-and-drop ingest with validation |
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js 18+
@@ -76,7 +76,7 @@ python -m uvicorn backend.main:app --reload --port 8000 --app-dir .
 
 ---
 
-## 🏗️ Tech Stack
+## Tech Stack
 
 **Frontend:** React 18 · Vite · Recharts · Lucide Icons · Custom Glassmorphism CSS
 
@@ -86,15 +86,15 @@ python -m uvicorn backend.main:app --reload --port 8000 --app-dir .
 
 ---
 
-## 🌐 Supported Domains
+## Supported Domains
 
-- 📡 **Telecom** — churn from call patterns, data usage, international plans
-- 🏦 **Banking** — at-risk account holders via balance, activity & support signals
-- 🛍️ **E-Commerce** — churning shoppers from order history & satisfaction scores
+- **Telecom** — churn from call patterns, data usage, international plans
+- **Banking** — at-risk account holders via balance, activity & support signals
+- **E-Commerce** — churning shoppers from order history & satisfaction scores
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 hack temp/
@@ -115,6 +115,6 @@ hack temp/
 
 <div align="center">
 
-Built with ❤️ for the Hackathon &nbsp;·&nbsp; **C.C.P.I.S. v4.0**
+Built for the Hackathon &nbsp;·&nbsp; **C.C.P.I.S. v4.0**
 
 </div>
